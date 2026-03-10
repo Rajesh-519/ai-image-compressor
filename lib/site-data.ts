@@ -121,21 +121,24 @@ export const testimonialItems = [
 export const pricingTiers = [
   {
     name: "Free",
-    price: "$0",
+    priceUsd: "$0",
+    priceInr: "₹0",
     description: "For creators validating workflows and previewing AI compression.",
     features: ["50 images per day", "Basic compression", "Manual downloads", "Preview and compare"],
     cta: "Start free"
   },
   {
     name: "Pro",
-    price: "$29",
+    priceUsd: "$29",
+    priceInr: "~₹2,661",
     description: "For marketers and product teams shipping optimized assets every day.",
     features: ["Unlimited compression", "Bulk processing", "Responsive variants", "SEO metadata generation"],
     cta: "Upgrade to Pro"
   },
   {
     name: "Agency",
-    price: "$99",
+    priceUsd: "$99",
+    priceInr: "~₹9,085",
     description: "For multi-brand teams that need API access, audits, and shared governance.",
     features: ["Team accounts", "API keys", "Website audits", "Priority support"],
     cta: "Contact sales"

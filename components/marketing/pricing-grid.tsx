@@ -1,10 +1,17 @@
+"use client";
+
+import { useState } from "react";
+
 import { CheckCircle2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { pricingTiers } from "@/lib/site-data";
+import { cn } from "@/utils/cn";
 
 export function PricingGrid() {
+  const [currency, setCurrency] = useState<"inr" | "usd">("inr");
+
   return (
     <section id="pricing" className="space-y-8">
       <div className="space-y-3 text-center">
@@ -14,6 +21,23 @@ export function PricingGrid() {
           Start with preview workflows, then unlock batch processing, responsive variants, API
           access, and agency controls.
         </p>
+        <div className="flex justify-center">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
+            {(["inr", "usd"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setCurrency(option)}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium transition",
+                  currency === option ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white"
+                )}
+              >
+                {option === "inr" ? "INR" : "USD"}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -22,7 +46,10 @@ export function PricingGrid() {
             <CardContent className="space-y-5">
               <div className="space-y-2">
                 <p className="text-sm uppercase tracking-[0.18em] text-primary">{tier.name}</p>
-                <CardTitle>{tier.price}/mo</CardTitle>
+                <CardTitle>{currency === "inr" ? tier.priceInr : tier.priceUsd}/mo</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {currency === "inr" ? `Also ${tier.priceUsd}/mo` : `Approx. ${tier.priceInr}/mo`}
+                </p>
                 <p className="text-sm text-muted-foreground">{tier.description}</p>
               </div>
               <ul className="space-y-3 text-sm text-muted-foreground">
@@ -43,6 +70,11 @@ export function PricingGrid() {
           </Card>
         ))}
       </div>
+
+      <p className="text-center text-xs text-muted-foreground">
+        INR is shown as an approximate conversion for Indian buyers. Reference used: 1 USD ≈ ₹91.77
+        on March 10, 2026. Final charge still depends on your Stripe billing currency setup.
+      </p>
     </section>
   );
 }
