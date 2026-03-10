@@ -48,6 +48,25 @@ export function getCompressionEstimate({
   };
 }
 
+export function suggestQualityForTarget({
+  originalSize,
+  targetSize,
+  format,
+  mode
+}: {
+  originalSize: number;
+  targetSize: number;
+  format: string;
+  mode: EstimateMode;
+}) {
+  const normalizedFormat = format.toLowerCase();
+  const formatFactor = formatAdjustments[normalizedFormat] ?? 0.74;
+  const modeFactor = modeAdjustments[mode];
+  const rawQuality = (targetSize / Math.max(1, originalSize * formatFactor * modeFactor)) * 100;
+
+  return Math.max(35, Math.min(95, Math.round(rawQuality)));
+}
+
 export function useCompressionEstimate({
   originalSize,
   quality,

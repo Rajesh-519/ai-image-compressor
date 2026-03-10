@@ -3,9 +3,11 @@
 import {
   Check,
   Cpu,
+  Download,
   FileScan,
   Link2,
   Loader2,
+  Package,
   ScanFace,
   ShieldCheck,
   Sparkles,
@@ -31,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   getCompressionEstimate,
+  suggestQualityForTarget,
   useCompressionEstimate
 } from "@/hooks/use-compression-estimate";
 import { formatBytes, formatPercent } from "@/utils/format";
@@ -233,9 +236,12 @@ export function CompressorWorkbench({
   const [executionMode, setExecutionMode] = useState<"server" | "edge">("server");
   const [mode, setMode] = useState<"max" | "balanced" | "quality" | "custom">("balanced");
   const [quality, setQuality] = useState(78);
+  const [targetSizeKb, setTargetSizeKb] = useState("");
   const [contentAware, setContentAware] = useState(true);
   const [generateResponsive, setGenerateResponsive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreparingBundle, setIsPreparingBundle] = useState(false);
+  const [bundleStatus, setBundleStatus] = useState<string | null>(null);
   const [result, setResult] = useState<CompressionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "analyzing" | "ready" | "error">("idle");
@@ -314,9 +320,19 @@ export function CompressorWorkbench({
   const selectedEffectiveFormat =
     outputFormat === "auto" ? recommendedFormat : (outputFormat as SupportedFormat);
   const originalSize = selectedFile?.size ?? 2_400_000;
+  const targetSizeBytes = Number(targetSizeKb) > 0 ? Number(targetSizeKb) * 1024 : null;
+  const effectiveQuality =
+    targetSizeBytes && Number.isFinite(targetSizeBytes)
+      ? suggestQualityForTarget({
+          originalSize,
+          targetSize: targetSizeBytes,
+          format: selectedEffectiveFormat,
+          mode
+        })
+      : quality;
   const estimate = useCompressionEstimate({
     originalSize,
-    quality,
+    quality: effectiveQuality,
     format: selectedEffectiveFormat,
     mode
   });
@@ -339,7 +355,15 @@ export function CompressorWorkbench({
           option.value === "auto" ? recommendedFormat : (option.value as SupportedFormat);
         const estimate = getCompressionEstimate({
           originalSize,
-          quality,
+          quality:
+            targetSizeBytes && Number.isFinite(targetSizeBytes)
+              ? suggestQualityForTarget({
+                  originalSize,
+                  targetSize: targetSizeBytes,
+                  format: effectiveFormat,
+                  mode
+                })
+              : quality,
           format: effectiveFormat,
           mode
         });
@@ -367,6 +391,7 @@ export function CompressorWorkbench({
       originalSize,
       quality,
       recommendedFormat,
+      targetSizeBytes,
       textCount
     ]
   );
@@ -408,6 +433,70 @@ export function CompressorWorkbench({
     });
   }
 
+  async function requestCompression({
+    format,
+    forceExecutionMode
+  }: {
+    format: ExportOptionValue | SupportedFormat;
+    forceExecutionMode?: "server" | "edge";
+  }) {
+    const selectedFormat = format === "auto" ? recommendedFormat : (format as SupportedFormat);
+    const runtime = forceExecutionMode ?? executionMode;
+    const requestQuality =
+      targetSizeBytes && Number.isFinite(targetSizeBytes)
+        ? suggestQualityForTarget({
+            originalSize,
+            targetSize: targetSizeBytes,
+            format: selectedFormat,
+            mode
+          })
+        : quality;
+
+    if (runtime === "edge" && selectedFile && !sourceUrl.trim() && isEdgeReadyFormat(selectedFormat)) {
+      return compressOnEdge({
+        file: selectedFile,
+        outputFormat: selectedFormat,
+        quality: requestQuality,
+        generateResponsive,
+        detectionHints
+      });
+    }
+
+    const formData = new FormData();
+
+    if (selectedFile) {
+      formData.append("file", selectedFile);
+    }
+
+    if (sourceUrl.trim()) {
+      formData.append("sourceUrl", sourceUrl.trim());
+    }
+
+    if (detectionHints) {
+      formData.append("detectionHints", JSON.stringify(detectionHints));
+    }
+
+    formData.append("outputFormat", format);
+    formData.append("executionMode", runtime);
+    formData.append("mode", mode);
+    formData.append("quality", String(requestQuality));
+    formData.append("contentAware", String(contentAware));
+    formData.append("generateResponsive", String(generateResponsive));
+    formData.append("responseType", "json");
+
+    const response = await fetch("/api/compress", {
+      method: "POST",
+      body: formData
+    });
+    const payload = (await response.json()) as CompressionResult & { error?: string };
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? "Compression failed.");
+    }
+
+    return payload;
+  }
+
   async function handleSubmit() {
     if (!selectedFile && !sourceUrl.trim()) {
       setError("Provide a local image, paste one, or enter a URL.");
@@ -418,56 +507,9 @@ export function CompressorWorkbench({
     setError(null);
 
     try {
-      if (
-        executionMode === "edge" &&
-        selectedFile &&
-        !sourceUrl.trim() &&
-        isEdgeReadyFormat(selectedEffectiveFormat)
-      ) {
-        const edgeResult = await compressOnEdge({
-          file: selectedFile,
-          outputFormat: selectedEffectiveFormat,
-          quality,
-          generateResponsive,
-          detectionHints
-        });
-
-        startTransition(() => setResult(edgeResult));
-        return;
-      }
-
-      const formData = new FormData();
-
-      if (selectedFile) {
-        formData.append("file", selectedFile);
-      }
-
-      if (sourceUrl.trim()) {
-        formData.append("sourceUrl", sourceUrl.trim());
-      }
-
-      if (detectionHints) {
-        formData.append("detectionHints", JSON.stringify(detectionHints));
-      }
-
-      formData.append("outputFormat", outputFormat);
-      formData.append("executionMode", executionMode);
-      formData.append("mode", mode);
-      formData.append("quality", String(quality));
-      formData.append("contentAware", String(contentAware));
-      formData.append("generateResponsive", String(generateResponsive));
-      formData.append("responseType", "json");
-
-      const response = await fetch("/api/compress", {
-        method: "POST",
-        body: formData
+      const payload = await requestCompression({
+        format: outputFormat
       });
-      const payload = (await response.json()) as CompressionResult & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Compression failed.");
-      }
-
       startTransition(() => setResult(payload));
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Compression failed.");
@@ -485,6 +527,58 @@ export function CompressorWorkbench({
     link.href = `data:${result.mimeType};base64,${result.bufferBase64}`;
     link.download = result.fileName;
     link.click();
+  }
+
+  async function handleDownloadAll() {
+    if (!selectedFile && !sourceUrl.trim()) {
+      setError("Provide a local image or source URL before exporting all formats.");
+      return;
+    }
+
+    setIsPreparingBundle(true);
+    setBundleStatus("Preparing multi-format export...");
+    setError(null);
+
+    try {
+      const { default: JSZip } = await import("jszip");
+      const archive = new JSZip();
+      const bundleFormats: SupportedFormat[] = ["avif", "webp", "jpeg", "png", "jxl", "heic"];
+      const baseName =
+        selectedFile?.name.replace(/\.[^/.]+$/, "") ||
+        sourceUrl.split("/").pop()?.replace(/\.[^/.]+$/, "") ||
+        "compressai-export";
+
+      for (const [index, format] of bundleFormats.entries()) {
+        setBundleStatus(`Encoding ${format.toUpperCase()} (${index + 1}/${bundleFormats.length})...`);
+
+        try {
+          const payload = await requestCompression({
+            format,
+            forceExecutionMode: "server"
+          });
+          archive.file(payload.fileName, Uint8Array.from(atob(payload.bufferBase64), (char) => char.charCodeAt(0)));
+        } catch (bundleError) {
+          archive.file(
+            `${baseName}-${format}-error.txt`,
+            bundleError instanceof Error ? bundleError.message : `Failed to export ${format.toUpperCase()}.`
+          );
+        }
+      }
+
+      setBundleStatus("Building ZIP archive...");
+      const zipBlob = await archive.generateAsync({ type: "blob" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(zipBlob);
+      link.download = `${baseName}-all-formats.zip`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 1_000);
+      setBundleStatus("ZIP export ready.");
+    } catch (bundleFailure) {
+      setError(bundleFailure instanceof Error ? bundleFailure.message : "Bulk export failed.");
+      setBundleStatus(null);
+    } finally {
+      setIsPreparingBundle(false);
+    }
   }
 
   return (
@@ -624,6 +718,29 @@ export function CompressorWorkbench({
 
                     <p className="mt-3 text-sm leading-6 text-muted-foreground">{option.bestFor}</p>
 
+                    <div className="mt-4 overflow-hidden rounded-[22px] border border-white/10 bg-black/30">
+                      {previewUrl || sourceUrl ? (
+                        <div className="relative aspect-[16/10]">
+                          <img
+                            src={previewUrl ?? sourceUrl}
+                            alt={`${option.label} preview`}
+                            className="h-full w-full object-cover opacity-80"
+                          />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                            <p className="text-[11px] uppercase tracking-[0.16em] text-primary">
+                              {option.value === "auto"
+                                ? `Exports as ${getFormatLabel(recommendedFormat)}`
+                                : `${option.label} output`}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex aspect-[16/10] items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                          Add an image to preview this export option.
+                        </div>
+                      )}
+                    </div>
+
                     <div className="mt-4 grid grid-cols-2 gap-3">
                       <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
                         <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -671,6 +788,7 @@ export function CompressorWorkbench({
                     {faceCount > 0 ? <Badge>{faceCount} face(s)</Badge> : null}
                     {textCount > 0 ? <Badge>{textCount} text block(s)</Badge> : null}
                     {likelyTransparency ? <Badge>Transparency likely</Badge> : null}
+                    {targetSizeBytes ? <Badge>Goal {targetSizeKb} KB</Badge> : null}
                     {willFallbackToServer ? <Badge>Server fallback enabled</Badge> : null}
                   </div>
 
@@ -682,6 +800,12 @@ export function CompressorWorkbench({
                     ) : (
                       <p>No quality or compatibility warning for this export path.</p>
                     )}
+                    {targetSizeBytes ? (
+                      <p>
+                        Current estimate is {formatBytes(activeExportCard.estimate.estimatedSize)} against a goal of{" "}
+                        {formatBytes(targetSizeBytes)}.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -713,20 +837,43 @@ export function CompressorWorkbench({
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Quality target</span>
-                <span>{quality}</span>
+            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{targetSizeBytes ? "Auto-tuned quality" : "Quality target"}</span>
+                  <span>{effectiveQuality}</span>
+                </div>
+                <input
+                  type="range"
+                  min={35}
+                  max={95}
+                  value={quality}
+                  onChange={(event) => setQuality(Number(event.target.value))}
+                  className="w-full accent-[hsl(var(--primary))]"
+                />
+                <Progress value={(effectiveQuality / 95) * 100} />
+                <p className="text-xs text-muted-foreground">
+                  {targetSizeBytes
+                    ? `Manual slider stays at ${quality}, but exports are auto-tuned to ${effectiveQuality} to chase ${targetSizeKb} KB.`
+                    : "Use the slider when you care more about visual quality than file size."}
+                </p>
               </div>
-              <input
-                type="range"
-                min={35}
-                max={95}
-                value={quality}
-                onChange={(event) => setQuality(Number(event.target.value))}
-                className="w-full accent-[hsl(var(--primary))]"
-              />
-              <Progress value={(quality / 95) * 100} />
+
+              <label className="space-y-2 text-sm text-muted-foreground">
+                Target size in KB
+                <Input
+                  inputMode="numeric"
+                  placeholder="Optional, e.g. 180"
+                  value={targetSizeKb}
+                  onChange={(event) => setTargetSizeKb(event.target.value.replace(/[^\d]/g, ""))}
+                />
+                <div className="rounded-[26px] border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-primary">Size-first mode</p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Enter a KB goal and CompressAI Pro will tune quality toward that target before export.
+                  </p>
+                </div>
+              </label>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
@@ -755,12 +902,22 @@ export function CompressorWorkbench({
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {submitLabel}
               </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownloadAll}
+                disabled={isPreparingBundle || isSubmitting}
+                leftIcon={isPreparingBundle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
+              >
+                Download all formats
+              </Button>
               {result ? (
-                <Button variant="outline" onClick={handleDownload}>
+                <Button variant="outline" onClick={handleDownload} leftIcon={<Download className="h-4 w-4" />}>
                   Download {result.fileName.split(".").pop()?.toUpperCase() ?? "result"}
                 </Button>
               ) : null}
             </div>
+
+            {bundleStatus ? <p className="text-sm text-muted-foreground">{bundleStatus}</p> : null}
           </div>
 
           <div className="dotted-noise space-y-5 p-7 lg:p-8">
