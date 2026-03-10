@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Check,
   Cpu,
   FileScan,
   Link2,
@@ -28,8 +29,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { useCompressionEstimate } from "@/hooks/use-compression-estimate";
+import {
+  getCompressionEstimate,
+  useCompressionEstimate
+} from "@/hooks/use-compression-estimate";
 import { formatBytes, formatPercent } from "@/utils/format";
+import { cn } from "@/utils/cn";
 
 type CompressionResult = {
   executionMode: "server" | "edge";
@@ -70,20 +75,151 @@ type CompressorWorkbenchProps = {
   description?: string;
 };
 
-function resolveEdgeFormat(outputFormat: string, hints: DetectionHints | null, file: File | null): SupportedFormat {
-  if (outputFormat !== "auto") {
-    return outputFormat as SupportedFormat;
+type ExportOptionValue = "auto" | SupportedFormat;
+
+type ExportOption = {
+  value: ExportOptionValue;
+  label: string;
+  eyebrow: string;
+  bestFor: string;
+  compatibility: string;
+};
+
+const EXPORT_OPTIONS: ExportOption[] = [
+  {
+    value: "auto",
+    label: "Smart Export",
+    eyebrow: "AI recommended",
+    bestFor: "Chooses the best format automatically for the asset in front of you.",
+    compatibility: "Best overall"
+  },
+  {
+    value: "avif",
+    label: "AVIF",
+    eyebrow: "Smallest photos",
+    bestFor: "High-detail photography, product shots, and modern web delivery.",
+    compatibility: "Modern browsers"
+  },
+  {
+    value: "webp",
+    label: "WebP",
+    eyebrow: "Safe modern default",
+    bestFor: "UI captures, mixed content, logos, and strong browser support.",
+    compatibility: "Broad support"
+  },
+  {
+    value: "jpeg",
+    label: "JPEG",
+    eyebrow: "Legacy compatible",
+    bestFor: "Maximum compatibility when transparency is not needed.",
+    compatibility: "Universal"
+  },
+  {
+    value: "png",
+    label: "PNG",
+    eyebrow: "Transparency safe",
+    bestFor: "Logos, diagrams, and alpha-heavy assets where clean edges matter.",
+    compatibility: "Universal"
+  },
+  {
+    value: "jxl",
+    label: "JPEG XL",
+    eyebrow: "Expert codec",
+    bestFor: "High-efficiency archival or controlled delivery environments.",
+    compatibility: "Selective support"
+  },
+  {
+    value: "heic",
+    label: "HEIC",
+    eyebrow: "Apple workflow",
+    bestFor: "Apple-centric capture pipelines and HEIF-based exports.",
+    compatibility: "Platform-specific"
+  }
+];
+
+const EDGE_READY_FORMATS = new Set<SupportedFormat>(["avif", "webp", "jpeg", "png"]);
+
+function isEdgeReadyFormat(format: SupportedFormat) {
+  return EDGE_READY_FORMATS.has(format);
+}
+
+function getFormatLabel(value: ExportOptionValue | SupportedFormat) {
+  return EXPORT_OPTIONS.find((option) => option.value === value)?.label ?? value.toUpperCase();
+}
+
+function getLikelyTransparency(file: File | null, sourceUrl: string) {
+  const candidate = `${file?.type ?? ""} ${file?.name ?? ""} ${sourceUrl}`.toLowerCase();
+  return ["png", "webp", "avif", "heic"].some((token) => candidate.includes(token));
+}
+
+function getRecommendedFormat({
+  file,
+  sourceUrl,
+  detectionHints
+}: {
+  file: File | null;
+  sourceUrl: string;
+  detectionHints: DetectionHints | null;
+}): SupportedFormat {
+  const likelyTransparency = getLikelyTransparency(file, sourceUrl);
+  const faces = detectionHints?.faces.length ?? 0;
+  const textBlocks = detectionHints?.textBlocks.length ?? 0;
+
+  if (likelyTransparency && textBlocks > 0) {
+    return "png";
   }
 
-  if (hints?.textBlocks.length) {
+  if (textBlocks > 0) {
     return "webp";
   }
 
-  if (file?.type.includes("png")) {
+  if (faces > 0) {
+    return "avif";
+  }
+
+  if (likelyTransparency) {
     return "webp";
   }
 
   return "avif";
+}
+
+function getFormatWarnings({
+  format,
+  likelyTransparency,
+  faceCount,
+  textCount,
+  executionMode
+}: {
+  format: SupportedFormat;
+  likelyTransparency: boolean;
+  faceCount: number;
+  textCount: number;
+  executionMode: "server" | "edge";
+}) {
+  const warnings: string[] = [];
+
+  if (format === "jpeg" && likelyTransparency) {
+    warnings.push("Transparency will be flattened in JPEG exports.");
+  }
+
+  if (format === "jpeg" && textCount > 0) {
+    warnings.push("Detected text will usually stay sharper in WebP or PNG.");
+  }
+
+  if (format === "png" && faceCount > 0) {
+    warnings.push("Photo-heavy assets are usually much smaller in AVIF or WebP.");
+  }
+
+  if ((format === "jxl" || format === "heic") && executionMode === "edge") {
+    warnings.push("This selection will automatically fall back to the server pipeline.");
+  }
+
+  if (format === "avif" && textCount > 0) {
+    warnings.push("AVIF is efficient here, but WebP can keep UI text slightly crisper.");
+  }
+
+  return warnings;
 }
 
 export function CompressorWorkbench({
@@ -169,11 +305,19 @@ export function CompressorWorkbench({
     };
   }, [contentAware, selectedFile]);
 
+  const likelyTransparency = getLikelyTransparency(selectedFile, sourceUrl);
+  const recommendedFormat = getRecommendedFormat({
+    file: selectedFile,
+    sourceUrl,
+    detectionHints
+  });
+  const selectedEffectiveFormat =
+    outputFormat === "auto" ? recommendedFormat : (outputFormat as SupportedFormat);
   const originalSize = selectedFile?.size ?? 2_400_000;
   const estimate = useCompressionEstimate({
     originalSize,
     quality,
-    format: outputFormat === "auto" ? "avif" : outputFormat,
+    format: selectedEffectiveFormat,
     mode
   });
   const deferredResult = useDeferredValue(result);
@@ -188,6 +332,68 @@ export function CompressorWorkbench({
 
   const faceCount = detectionHints?.faces.length ?? 0;
   const textCount = detectionHints?.textBlocks.length ?? 0;
+  const exportCards = useMemo(
+    () =>
+      EXPORT_OPTIONS.map((option) => {
+        const effectiveFormat =
+          option.value === "auto" ? recommendedFormat : (option.value as SupportedFormat);
+        const estimate = getCompressionEstimate({
+          originalSize,
+          quality,
+          format: effectiveFormat,
+          mode
+        });
+        const warnings = getFormatWarnings({
+          format: effectiveFormat,
+          likelyTransparency,
+          faceCount,
+          textCount,
+          executionMode
+        });
+
+        return {
+          ...option,
+          effectiveFormat,
+          estimate,
+          warnings,
+          serverFallback: executionMode === "edge" && !isEdgeReadyFormat(effectiveFormat)
+        };
+      }),
+    [
+      executionMode,
+      faceCount,
+      likelyTransparency,
+      mode,
+      originalSize,
+      quality,
+      recommendedFormat,
+      textCount
+    ]
+  );
+  const activeExportCard =
+    exportCards.find((option) => option.value === outputFormat) ?? exportCards[0];
+  const willFallbackToServer =
+    executionMode === "edge" && !isEdgeReadyFormat(selectedEffectiveFormat);
+  const submitLabel =
+    outputFormat === "auto"
+      ? `Run Smart export (${getFormatLabel(recommendedFormat)})`
+      : willFallbackToServer
+        ? `Compress to ${activeExportCard.label} with server fallback`
+        : `Compress to ${activeExportCard.label}`;
+  const selectionInsight =
+    outputFormat === "auto"
+      ? textCount > 0
+        ? `Smart export is favoring ${getFormatLabel(recommendedFormat)} because text regions were detected.`
+        : faceCount > 0
+          ? `Smart export is favoring ${getFormatLabel(recommendedFormat)} because faces were detected.`
+          : likelyTransparency
+            ? `Smart export is favoring ${getFormatLabel(
+                recommendedFormat
+              )} because this asset likely needs transparency-safe delivery.`
+            : `Smart export is favoring ${getFormatLabel(
+                recommendedFormat
+              )} for the strongest size-to-quality tradeoff.`
+      : activeExportCard.bestFor;
 
   function handleFile(file: File | null) {
     if (!file) {
@@ -212,10 +418,15 @@ export function CompressorWorkbench({
     setError(null);
 
     try {
-      if (executionMode === "edge" && selectedFile && !sourceUrl.trim()) {
+      if (
+        executionMode === "edge" &&
+        selectedFile &&
+        !sourceUrl.trim() &&
+        isEdgeReadyFormat(selectedEffectiveFormat)
+      ) {
         const edgeResult = await compressOnEdge({
           file: selectedFile,
-          outputFormat: resolveEdgeFormat(outputFormat, detectionHints, selectedFile),
+          outputFormat: selectedEffectiveFormat,
           quality,
           generateResponsive,
           detectionHints
@@ -366,39 +577,140 @@ export function CompressorWorkbench({
               </div>
             </motion.div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 text-sm text-muted-foreground">
-                Output format
-                <select
-                  value={outputFormat}
-                  onChange={(event) => setOutputFormat(event.target.value)}
-                  className="h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none"
-                >
-                  <option value="auto">Auto recommend</option>
-                  <option value="avif">AVIF</option>
-                  <option value="webp">WebP</option>
-                  <option value="jxl">JPEG XL</option>
-                  <option value="jpeg">JPEG</option>
-                  <option value="png">PNG</option>
-                  <option value="heic">HEIC</option>
-                </select>
-              </label>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-white">Choose the export you want to download</p>
+                  <p className="text-sm text-muted-foreground">
+                    Smart Export is the default. Manual codecs stay available when you need exact control.
+                  </p>
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-muted-foreground">
+                  Current AI pick: <span className="font-medium text-white">{getFormatLabel(recommendedFormat)}</span>
+                </div>
+              </div>
 
-              <label className="space-y-2 text-sm text-muted-foreground">
-                Compression mode
-                <select
-                  value={mode}
-                  onChange={(event) =>
-                    setMode(event.target.value as "max" | "balanced" | "quality" | "custom")
-                  }
-                  className="h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none"
-                >
-                  <option value="max">Maximum compression</option>
-                  <option value="balanced">Balanced</option>
-                  <option value="quality">High quality</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </label>
+              <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                {exportCards.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setOutputFormat(option.value)}
+                    className={cn(
+                      "rounded-[26px] border p-4 text-left transition hover:border-white/20 hover:bg-white/[0.05]",
+                      outputFormat === option.value
+                        ? "border-primary/45 bg-primary/[0.10] shadow-[0_18px_48px_rgba(59,130,246,0.16)]"
+                        : "border-white/10 bg-white/[0.03]"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-primary">
+                          {option.eyebrow}
+                        </p>
+                        <p className="mt-2 text-lg font-semibold text-white">{option.label}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {option.value === "auto" ? (
+                          <Badge>{getFormatLabel(recommendedFormat)} now</Badge>
+                        ) : null}
+                        {outputFormat === option.value ? (
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-primary/40 bg-primary/15 text-primary">
+                            <Check className="h-4 w-4" />
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{option.bestFor}</p>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                          Est. size
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-white">
+                          {formatBytes(option.estimate.estimatedSize)}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                          Savings
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-white">
+                          {formatPercent(option.estimate.savings)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                      <span>{option.compatibility}</span>
+                      <span>{option.serverFallback ? "Server fallback" : executionMode === "edge" ? "Edge ready" : "Server ready"}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="rounded-[26px] border border-white/10 bg-white/[0.03] p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-primary">Selected export</p>
+                      <p className="mt-2 text-xl font-semibold text-white">
+                        {outputFormat === "auto"
+                          ? `Smart Export -> ${getFormatLabel(recommendedFormat)}`
+                          : activeExportCard.label}
+                      </p>
+                    </div>
+                    <Badge>{activeExportCard.compatibility}</Badge>
+                  </div>
+
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{selectionInsight}</p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {faceCount > 0 ? <Badge>{faceCount} face(s)</Badge> : null}
+                    {textCount > 0 ? <Badge>{textCount} text block(s)</Badge> : null}
+                    {likelyTransparency ? <Badge>Transparency likely</Badge> : null}
+                    {willFallbackToServer ? <Badge>Server fallback enabled</Badge> : null}
+                  </div>
+
+                  <div className="mt-4 space-y-2 text-sm text-muted-foreground">
+                    {activeExportCard.warnings.length > 0 ? (
+                      activeExportCard.warnings.map((warning) => (
+                        <p key={warning}>{warning}</p>
+                      ))
+                    ) : (
+                      <p>No quality or compatibility warning for this export path.</p>
+                    )}
+                  </div>
+                </div>
+
+                <label className="space-y-2 text-sm text-muted-foreground">
+                  Compression mode
+                  <select
+                    value={mode}
+                    onChange={(event) =>
+                      setMode(event.target.value as "max" | "balanced" | "quality" | "custom")
+                    }
+                    className="h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none"
+                  >
+                    <option value="max">Maximum compression</option>
+                    <option value="balanced">Balanced</option>
+                    <option value="quality">High quality</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                  <div className="rounded-[26px] border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-primary">Download outcome</p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {outputFormat === "auto"
+                        ? `Most users should stay on Smart Export. It will deliver ${getFormatLabel(
+                            recommendedFormat
+                          )} for this image.`
+                        : `Manual mode locks the export to ${activeExportCard.label} so the download result matches your selection exactly.`}
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -441,11 +753,11 @@ export function CompressorWorkbench({
             <div className="flex flex-wrap gap-3">
               <Button onClick={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {executionMode === "edge" ? "Run edge compression" : "Run server compression"}
+                {submitLabel}
               </Button>
               {result ? (
                 <Button variant="outline" onClick={handleDownload}>
-                  Download result
+                  Download {result.fileName.split(".").pop()?.toUpperCase() ?? "result"}
                 </Button>
               ) : null}
             </div>
@@ -592,6 +904,7 @@ export function CompressorWorkbench({
                   <p className="text-xs uppercase tracking-[0.18em] text-primary">Analysis summary</p>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
+                  <Badge>{deferredResult.fileName.split(".").pop()?.toUpperCase() ?? "EXPORT"}</Badge>
                   <Badge>{deferredResult.analysis.intent}</Badge>
                   <Badge>{deferredResult.analysis.suggestedFormat}</Badge>
                   <Badge>{deferredResult.analysis.faceCount ?? faceCount} face(s)</Badge>

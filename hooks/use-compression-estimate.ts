@@ -27,25 +27,41 @@ const modeAdjustments: Record<EstimateMode, number> = {
   custom: 0.82
 };
 
+export function getCompressionEstimate({
+  originalSize,
+  quality,
+  format,
+  mode
+}: EstimateOptions) {
+  const normalizedFormat = format.toLowerCase();
+  const formatFactor = formatAdjustments[normalizedFormat] ?? 0.74;
+  const modeFactor = modeAdjustments[mode];
+  const qualityFactor = Math.max(0.28, Math.min(1.2, quality / 100));
+  const estimatedSize = Math.max(
+    12_000,
+    Math.round(originalSize * formatFactor * modeFactor * qualityFactor)
+  );
+
+  return {
+    estimatedSize,
+    savings: Math.max(0, ((originalSize - estimatedSize) / originalSize) * 100)
+  };
+}
+
 export function useCompressionEstimate({
   originalSize,
   quality,
   format,
   mode
 }: EstimateOptions) {
-  return useMemo(() => {
-    const normalizedFormat = format.toLowerCase();
-    const formatFactor = formatAdjustments[normalizedFormat] ?? 0.74;
-    const modeFactor = modeAdjustments[mode];
-    const qualityFactor = Math.max(0.28, Math.min(1.2, quality / 100));
-    const estimatedSize = Math.max(
-      12_000,
-      Math.round(originalSize * formatFactor * modeFactor * qualityFactor)
-    );
-
-    return {
-      estimatedSize,
-      savings: Math.max(0, ((originalSize - estimatedSize) / originalSize) * 100)
-    };
-  }, [format, mode, originalSize, quality]);
+  return useMemo(
+    () =>
+      getCompressionEstimate({
+        originalSize,
+        quality,
+        format,
+        mode
+      }),
+    [format, mode, originalSize, quality]
+  );
 }
