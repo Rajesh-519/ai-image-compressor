@@ -37,10 +37,24 @@ export default async function DashboardApiPage() {
           <div className="rounded-3xl border border-white/10 bg-black/30 p-5 text-sm text-muted-foreground">
             <pre className="overflow-x-auto text-xs text-white">{`POST /api/compress
 POST /api/convert
+POST /api/resize
 POST /api/bulk
 GET  /api/usage
 
 Authorization: Bearer <api_key>`}</pre>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="space-y-4">
+          <CardTitle>Example request</CardTitle>
+          <div className="rounded-3xl border border-white/10 bg-black/30 p-5 text-sm text-muted-foreground">
+            <pre className="overflow-x-auto text-xs text-white">{`POST /api/compress
+{
+  "image_url": "https://example.com/hero.jpg",
+  "quality": 80,
+  "outputFormat": "webp"
+}`}</pre>
           </div>
         </CardContent>
       </Card>

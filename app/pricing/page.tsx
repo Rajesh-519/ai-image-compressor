@@ -10,10 +10,9 @@ export default function PricingPage() {
       <main className="mx-auto max-w-7xl space-y-12 px-6 py-16 lg:px-8">
         <div className="space-y-4 text-center">
           <Badge>Pricing</Badge>
-          <h1 className="font-display text-5xl font-semibold text-white">Choose a plan for your delivery workflow</h1>
-          <p className="mx-auto max-w-3xl text-lg text-muted-foreground">
-            Free covers daily previews. Pro unlocks batch processing and responsive assets. Agency
-            adds API keys, audits, and multi-team delivery workflows.
+          <h1 className="font-display text-5xl font-semibold text-white">Simple plans for image teams</h1>
+          <p className="mx-auto max-w-3xl text-base text-muted-foreground">
+            Start free. Upgrade for batch jobs, APIs, and audits.
           </p>
         </div>
         <PricingGrid />

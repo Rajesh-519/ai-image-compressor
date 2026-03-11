@@ -3,6 +3,7 @@ import { StatsGrid } from "@/components/dashboard/stats-grid";
 import { UsageOverview } from "@/components/dashboard/usage-overview";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { getDashboardData } from "@/lib/dashboard-data";
+import { dashboardMessages } from "@/lib/site-data";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 
@@ -26,9 +27,7 @@ export default async function DashboardOverviewPage() {
             <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
               <p className="text-xs uppercase tracking-[0.18em] text-primary">Current plan</p>
               <p className="mt-3 font-display text-4xl text-white">{data.plan}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Upgrade when you need responsive bundles, API keys, or website audits.
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{dashboardMessages.planSummary}</p>
             </div>
           </CardContent>
         </Card>

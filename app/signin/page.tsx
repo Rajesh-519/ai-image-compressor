@@ -11,10 +11,8 @@ export default function SignInPage() {
         <Card className="w-full max-w-xl">
           <CardContent className="space-y-6 p-8 text-center">
             <Badge>Authentication</Badge>
-            <h1 className="font-display text-4xl font-semibold text-white">Sign in to manage compression at scale</h1>
-            <p className="text-muted-foreground">
-              Access your dashboard, history, billing, API keys, and website audit reports.
-            </p>
+            <h1 className="font-display text-4xl font-semibold text-white">Sign in to keep working</h1>
+            <p className="text-muted-foreground">Dashboard, billing, API keys, and image history.</p>
             <GoogleSignInButton />
           </CardContent>
         </Card>

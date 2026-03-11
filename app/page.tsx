@@ -5,104 +5,105 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { FaqList } from "@/components/marketing/faq-list";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
-import { PricingGrid } from "@/components/marketing/pricing-grid";
-import { Testimonials } from "@/components/marketing/testimonials";
+import { HowItWorks } from "@/components/marketing/how-it-works";
+import { ResultsBand } from "@/components/marketing/results-band";
+import { SeoMiniGrid } from "@/components/marketing/seo-mini-grid";
 import { Badge } from "@/components/ui/badge";
+import { heroHighlights } from "@/lib/site-data";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
 
-      <main>
-        <section>
-          <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
-            <div className="hero-shell surface-hairline grid gap-10 overflow-hidden rounded-[36px] border border-white/10 p-8 lg:grid-cols-[1.08fr_0.92fr] lg:p-10">
-              <div className="space-y-8">
-              <Badge>AI Image Compression SaaS</Badge>
-                <div className="space-y-5">
-                  <h1 className="text-balance font-display text-5xl font-semibold leading-tight text-white lg:text-7xl">
-                    AI compression infrastructure for teams that care about image quality and page speed.
+      <main className="space-y-20 pb-20">
+        <section className="mx-auto max-w-7xl px-6 pt-14 lg:px-8 lg:pt-20">
+          <div className="hero-shell surface-hairline overflow-hidden rounded-[36px] border border-white/10 p-8 lg:p-10">
+            <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="space-y-6">
+                <Badge>AI Image Optimizer</Badge>
+                <div className="space-y-4">
+                  <h1 className="font-display text-4xl font-semibold text-white sm:text-5xl lg:text-6xl">
+                    Compress images fast. Keep them clean.
                   </h1>
-                  <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
-                    CompressAI Pro blends protected-region detection, edge WebAssembly codecs, modern
-                    format conversion, responsive variants, and audit tooling into one product.
+                  <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
+                    Compress JPG PNG WebP and AVIF instantly.
                   </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {heroHighlights.map((item) => (
+                    <div
+                      key={item}
+                      className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-white"
+                    >
+                      {item}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="flex flex-wrap gap-3">
                   <Link
-                    href="/compressor"
-                    className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground shadow-[0_18px_48px_rgba(59,130,246,0.24)] transition hover:brightness-105"
+                    href="#tool"
+                    className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-medium text-primary-foreground transition hover:brightness-105"
                   >
-                    Launch compression lab
+                    Upload images
                   </Link>
                   <Link
                     href="/pricing"
-                    className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-6 text-sm font-medium text-white transition hover:bg-white/[0.08]"
+                    className="inline-flex h-12 items-center justify-center rounded-full border border-white/10 bg-white/5 px-6 text-sm font-medium text-white transition hover:bg-white/10"
                   >
-                    Explore plans
+                    View pricing
                   </Link>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                    <p className="text-xs uppercase tracking-[0.18em] text-primary">Codecs</p>
-                    <p className="mt-3 font-display text-3xl text-white">AVIF, WebP, JXL</p>
-                  </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                    <p className="text-xs uppercase tracking-[0.18em] text-primary">Protected zones</p>
-                    <p className="mt-3 font-display text-3xl text-white">Faces + text</p>
-                  </div>
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                    <p className="text-xs uppercase tracking-[0.18em] text-primary">Execution</p>
-                    <p className="mt-3 font-display text-3xl text-white">Server or edge</p>
-                  </div>
                 </div>
               </div>
 
-              <div className="dotted-noise grid gap-4">
-                <div className="rounded-[28px] border border-white/10 bg-black/30 p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-primary">Live advisor</p>
-                  <div className="mt-5 space-y-4">
+              <div className="grid gap-4">
+                <div className="rounded-[28px] border border-white/10 bg-black/20 p-6">
+                  <p className="text-xs uppercase tracking-[0.22em] text-primary">Smart output</p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                      <p className="text-sm text-muted-foreground">Asset</p>
-                      <p className="mt-2 text-2xl font-semibold text-white">Homepage hero PNG</p>
+                      <p className="text-sm text-muted-foreground">Example result</p>
+                      <p className="mt-2 text-3xl font-semibold text-white">2.4 MB to 280 KB</p>
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-primary">Recommendation</p>
-                        <p className="mt-2 text-lg text-white">AVIF + edge delivery</p>
-                      </div>
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                        <p className="text-xs uppercase tracking-[0.18em] text-primary">Protected</p>
-                        <p className="mt-2 text-lg text-white">2 faces, 4 text blocks</p>
-                      </div>
-                    </div>
-                    <div className="rounded-2xl border border-primary/20 bg-primary/10 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-primary">Projected win</p>
-                      <p className="mt-2 text-3xl font-semibold text-white">2.4MB → 280KB</p>
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-sm text-muted-foreground">AI pick</p>
+                      <p className="mt-2 text-3xl font-semibold text-white">AVIF</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
-                  <p className="text-xs uppercase tracking-[0.22em] text-primary">Why teams switch</p>
-                  <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                    <li>One pipeline for editorial, storefront, and app screenshots.</li>
-                    <li>Protected-region detection stops faces and typography from collapsing.</li>
-                    <li>Edge mode reduces waiting time for fast one-off exports.</li>
-                  </ul>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-primary">Batch</p>
+                    <p className="mt-2 text-xl font-semibold text-white">ZIP export</p>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-primary">Audit</p>
+                    <p className="mt-2 text-xl font-semibold text-white">Website scan</p>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-primary">API</p>
+                    <p className="mt-2 text-xl font-semibold text-white">Developer ready</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <div className="mx-auto max-w-7xl space-y-24 px-6 py-16 lg:px-8 lg:py-24">
+        <section id="tool" className="mx-auto max-w-7xl px-6 lg:px-8">
+          <CompressorWorkbench
+            title="Upload images. Optimize them. Download fast."
+            description="Drag files, paste images, add URLs, pick presets, and export modern formats."
+          />
+        </section>
+
+        <div className="mx-auto max-w-7xl space-y-20 px-6 lg:px-8">
+          <ResultsBand />
           <FeatureGrid />
-          <CompressorWorkbench />
-          <PricingGrid />
-          <Testimonials />
+          <HowItWorks />
+          <SeoMiniGrid />
           <FaqList />
         </div>
       </main>

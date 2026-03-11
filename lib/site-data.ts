@@ -1,14 +1,39 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  BadgeCheck,
   Bot,
-  Gauge,
+  Code2,
   Globe,
   Layers3,
+  Package,
   ScanSearch,
-  Sparkles,
-  WandSparkles
+  Smartphone,
+  Sparkles
 } from "lucide-react";
+
+export const heroHighlights = [
+  "Reduce image size up to 90%",
+  "JPG PNG WebP AVIF HEIC support",
+  "Batch compression and ZIP export",
+  "AI picks format quality and size"
+];
+
+export const resultsHighlights = [
+  {
+    label: "Average savings",
+    value: "90%",
+    note: "Smaller payloads. Better page speed."
+  },
+  {
+    label: "Formats",
+    value: "6",
+    note: "JPG PNG WebP AVIF HEIC JXL."
+  },
+  {
+    label: "Delivery",
+    value: "<2s",
+    note: "Edge codecs and fast server fallback."
+  }
+];
 
 export const featureCards: Array<{
   title: string;
@@ -17,104 +42,122 @@ export const featureCards: Array<{
   stat: string;
 }> = [
   {
-    title: "AI content-aware compression",
-    description:
-      "Protect faces, text, and product detail while aggressively compressing low-salience regions.",
+    title: "AI Smart Optimize",
+    description: "AI picks format, quality, and resize in one click.",
     icon: Bot,
-    stat: "Up to 90% savings"
+    stat: "Auto strategy"
   },
   {
-    title: "Modern codec engine",
-    description:
-      "AVIF, WebP, JPEG XL, HEIC, PNG, and JPEG conversion with codec-specific tuning.",
+    title: "Modern formats",
+    description: "JPG PNG WebP AVIF HEIC and JPEG XL.",
     icon: Layers3,
-    stat: "6 premium formats"
+    stat: "6 formats"
   },
   {
-    title: "Real-time visual QA",
-    description:
-      "Zoom, compare, and slide between original and output before exporting production assets.",
+    title: "Visual compare",
+    description: "Preview original and output before download.",
     icon: Sparkles,
-    stat: "Instant diff preview"
+    stat: "Before / after"
   },
   {
-    title: "Bulk and API workflows",
-    description:
-      "Compress folders, ZIP archives, and pipelines with API keys, usage quotas, and plan enforcement.",
-    icon: BadgeCheck,
-    stat: "Agency ready"
+    title: "Batch exports",
+    description: "ZIP delivery for large image sets.",
+    icon: Package,
+    stat: "Bulk ready"
   },
   {
-    title: "Responsive delivery",
-    description:
-      "Generate multi-size variants, srcset markup, and framework-friendly responsive output bundles.",
-    icon: Gauge,
-    stat: "4 preset breakpoints"
-  },
-  {
-    title: "Website image audit",
-    description:
-      "Scan public pages for oversized assets, legacy formats, and immediate page speed opportunities.",
+    title: "Website audit",
+    description: "Scan pages and find heavy images fast.",
     icon: ScanSearch,
-    stat: "SEO reporting"
+    stat: "SEO wins"
   },
   {
-    title: "SEO metadata automation",
-    description:
-      "Generate alt text, filenames, titles, and captions from image context and delivery intent.",
-    icon: WandSparkles,
-    stat: "AI assisted"
+    title: "Developer API",
+    description: "Compress convert and resize from your app.",
+    icon: Code2,
+    stat: "API endpoints"
   },
   {
-    title: "Global delivery controls",
-    description:
-      "Pair compression with CDN strategy, storage connectors, and format negotiation for web performance.",
+    title: "Social presets",
+    description: "Instagram YouTube Twitter LinkedIn WhatsApp.",
+    icon: Smartphone,
+    stat: "1 tap presets"
+  },
+  {
+    title: "CDN ready",
+    description: "Generate responsive assets for global delivery.",
     icon: Globe,
-    stat: "Edge aligned"
+    stat: "Fast delivery"
+  }
+];
+
+export const workflowSteps = [
+  {
+    title: "1. Upload",
+    bullets: ["Drag and drop images", "Paste from clipboard", "Add image or website URL"]
+  },
+  {
+    title: "2. Optimize",
+    bullets: ["Use AI Smart Optimize", "Set format quality and size", "Apply social or web presets"]
+  },
+  {
+    title: "3. Export",
+    bullets: ["Preview savings", "Download one file or ZIP", "Use responsive output and API links"]
+  }
+];
+
+export const seoMiniSections = [
+  {
+    title: "AI image optimizer",
+    copy:
+      "AI Image Optimizer Pro cuts file size while keeping images clean. Use it for websites, stores, social posts, and app assets."
+  },
+  {
+    title: "Modern formats",
+    copy:
+      "Convert JPG PNG WebP AVIF and HEIC in one place. Smart mode picks the best output for speed and quality."
+  },
+  {
+    title: "Built for teams",
+    copy:
+      "Compress single files, large batches, and website image sets. Use dashboard stats, API keys, and usage tracking."
   }
 ];
 
 export const faqItems = [
   {
-    question: "Which formats does CompressAI Pro support?",
-    answer:
-      "The platform is designed around JPEG, PNG, WebP, AVIF, HEIC, and JPEG XL workflows. Sharp handles the common path, while the codec abstraction allows Squoosh-backed fallbacks when needed."
+    question: "Which formats are supported?",
+    answer: "JPG PNG WebP AVIF HEIC and JPEG XL."
   },
   {
-    question: "How is the AI compression mode different from standard compression?",
-    answer:
-      "AI mode analyzes image intent and important regions before assigning codec, quality, and resize decisions. That produces smaller files without flattening faces, text, or product edges."
+    question: "What does AI Smart Optimize do?",
+    answer: "It selects format quality and resize settings automatically."
   },
   {
-    question: "Can teams automate compression in their CMS or build pipeline?",
-    answer:
-      "Yes. Agency accounts can issue API keys, send files to `/api/compress`, and query `/api/usage` for quota and analytics."
+    question: "Can I compress images from a URL?",
+    answer: "Yes. Paste an image URL and optimize it directly."
   },
   {
-    question: "Is privacy built in?",
-    answer:
-      "The app supports encrypted uploads, configurable retention, API key auth, and browser-first preview flows. You can also adapt the processing layer for fully local compression."
+    question: "Can teams use an API?",
+    answer: "Yes. Pro and Agency workflows can use API keys and usage tracking."
   }
 ];
 
 export const testimonialItems = [
   {
-    quote:
-      "We replaced three separate tools with one upload flow and cut image payload by 68% across our catalog.",
+    quote: "We cut image payload by 68% in the first week.",
     name: "Mina Patel",
-    role: "Performance Lead, Atlas Commerce"
+    role: "Performance Lead"
   },
   {
-    quote:
-      "The audit tool found legacy PNG banners we missed for years. The responsive bundle export paid for the migration immediately.",
+    quote: "The website audit found image waste we had missed for years.",
     name: "Jordan Lee",
-    role: "Frontend Platform, Northstar Media"
+    role: "Frontend Platform"
   },
   {
-    quote:
-      "Bulk compression plus API quotas made this workable for agency teams instead of just individual designers.",
+    quote: "Batch export plus API access made this useful across the whole team.",
     name: "Sofia Nguyen",
-    role: "Founder, Pixel Assembly"
+    role: "Agency Founder"
   }
 ];
 
@@ -122,25 +165,90 @@ export const pricingTiers = [
   {
     name: "Free",
     priceUsd: "$0",
-    priceInr: "₹0",
-    description: "For creators validating workflows and previewing AI compression.",
-    features: ["50 images per day", "Basic compression", "Manual downloads", "Preview and compare"],
+    priceInr: "INR 0",
+    description: "For testing and quick one-off exports.",
+    features: ["20 images / day", "Single image tool", "Preview and download", "Basic AI optimize"],
     cta: "Start free"
   },
   {
     name: "Pro",
     priceUsd: "$29",
-    priceInr: "~₹2,661",
-    description: "For marketers and product teams shipping optimized assets every day.",
-    features: ["Unlimited compression", "Bulk processing", "Responsive variants", "SEO metadata generation"],
+    priceInr: "~INR 2,661",
+    description: "For creators and teams shipping assets daily.",
+    features: ["Unlimited compression", "Batch uploads", "API access", "CDN-ready outputs"],
     cta: "Upgrade to Pro"
   },
   {
     name: "Agency",
     priceUsd: "$99",
-    priceInr: "~₹9,085",
-    description: "For multi-brand teams that need API access, audits, and shared governance.",
-    features: ["Team accounts", "API keys", "Website audits", "Priority support"],
+    priceInr: "~INR 9,085",
+    description: "For bigger teams with audits and advanced workflows.",
+    features: ["Team access", "Website audits", "Priority support", "Higher throughput"],
     cta: "Contact sales"
   }
 ];
+
+export const seoLandingPages = {
+  "compress-jpg": {
+    title: "Compress JPG Online",
+    subtitle: "Shrink JPG files fast with AI quality control.",
+    bullets: ["Reduce JPG size", "Keep photos sharp", "Download instantly"]
+  },
+  "compress-png": {
+    title: "Compress PNG Online",
+    subtitle: "Optimize PNG files with transparency-safe output.",
+    bullets: ["Keep alpha layers", "Reduce heavy screenshots", "Export faster pages"]
+  },
+  "compress-webp": {
+    title: "Compress WebP Online",
+    subtitle: "Tune WebP files for speed and clean detail.",
+    bullets: ["Great for UI shots", "Strong browser support", "Fast web delivery"]
+  },
+  "compress-avif": {
+    title: "Compress AVIF Online",
+    subtitle: "Use AVIF for smaller modern image delivery.",
+    bullets: ["Excellent savings", "Modern format", "Best for web photos"]
+  },
+  "batch-image-compressor": {
+    title: "Batch Image Compressor",
+    subtitle: "Compress large image sets and export ZIP packages.",
+    bullets: ["Large batch flows", "ZIP output", "Team ready"]
+  },
+  "ai-image-optimizer": {
+    title: "AI Image Optimizer",
+    subtitle: "Let AI choose the best format quality and size.",
+    bullets: ["1 click optimize", "Format conversion", "Responsive output"]
+  }
+} as const;
+
+export type SeoLandingSlug = keyof typeof seoLandingPages;
+
+export const seoLandingCards = Object.entries(seoLandingPages).map(([slug, page]) => ({
+  slug,
+  ...page
+}));
+
+export const footerLinks = [
+  {
+    label: "Compressor",
+    href: "/compressor"
+  },
+  {
+    label: "Website Audit",
+    href: "/analytics"
+  },
+  {
+    label: "Pricing",
+    href: "/pricing"
+  },
+  {
+    label: "Dashboard",
+    href: "/dashboard"
+  }
+];
+
+export const footerBullets = ["AI compression", "Batch exports", "API ready", "Mobile friendly"];
+
+export const dashboardMessages = {
+  planSummary: "Upgrade for batch jobs, API usage, and site audits."
+};

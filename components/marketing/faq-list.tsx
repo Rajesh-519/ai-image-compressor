@@ -7,8 +7,8 @@ export function FaqList() {
     <section className="space-y-8">
       <div className="space-y-3 text-center">
         <Badge>FAQ</Badge>
-        <h2 className="font-display text-4xl font-semibold text-white">
-          Implementation details teams ask about
+        <h2 className="font-display text-3xl font-semibold text-white sm:text-4xl">
+          Short answers
         </h2>
       </div>
 

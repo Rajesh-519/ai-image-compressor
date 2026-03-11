@@ -12,7 +12,7 @@ const envSchema = z.object({
   STRIPE_AGENCY_PRICE_ID: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   APP_BASE_URL: z.string().url().default("http://localhost:3000"),
-  FREE_DAILY_IMAGE_LIMIT: z.coerce.number().default(50),
+  FREE_DAILY_IMAGE_LIMIT: z.coerce.number().default(20),
   UPLOAD_MAX_FILE_SIZE_MB: z.coerce.number().default(25)
 });
 

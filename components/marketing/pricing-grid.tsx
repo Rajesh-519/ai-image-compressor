@@ -16,10 +16,11 @@ export function PricingGrid() {
     <section id="pricing" className="space-y-8">
       <div className="space-y-3 text-center">
         <Badge>Pricing</Badge>
-        <h2 className="font-display text-4xl font-semibold text-white">Plans that scale with usage</h2>
-        <p className="mx-auto max-w-3xl text-muted-foreground">
-          Start with preview workflows, then unlock batch processing, responsive variants, API
-          access, and agency controls.
+        <h2 className="font-display text-3xl font-semibold text-white sm:text-4xl">
+          Plans that fit solo users and teams
+        </h2>
+        <p className="mx-auto max-w-3xl text-sm text-muted-foreground">
+          Start free. Upgrade for batch jobs, APIs, and audits.
         </p>
         <div className="flex justify-center">
           <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
@@ -30,7 +31,9 @@ export function PricingGrid() {
                 onClick={() => setCurrency(option)}
                 className={cn(
                   "rounded-full px-4 py-2 text-sm font-medium transition",
-                  currency === option ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white"
+                  currency === option
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-white"
                 )}
               >
                 {option === "inr" ? "INR" : "USD"}
@@ -72,8 +75,8 @@ export function PricingGrid() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        INR is shown as an approximate conversion for Indian buyers. Reference used: 1 USD ≈ ₹91.77
-        on March 10, 2026. Final charge still depends on your Stripe billing currency setup.
+        INR is an approximate display. Reference used: 1 USD about INR 91.77 on March 10, 2026.
+        Final billing still depends on your Stripe currency setup.
       </p>
     </section>
   );

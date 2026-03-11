@@ -67,10 +67,7 @@ export function AuditForm() {
               {loading ? "Scanning..." : "Run audit"}
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Agency plan required. The scanner inspects up to 25 page images and flags format,
-            size, and layout opportunities.
-          </p>
+          <p className="text-sm text-muted-foreground">Agency plan required. Scans up to 25 images per page.</p>
           {error ? <p className="text-sm text-rose-300">{error}</p> : null}
         </CardContent>
       </Card>
@@ -103,7 +100,7 @@ export function AuditForm() {
                 >
                   <p className="truncate font-medium text-white">{image.src}</p>
                   <p className="mt-2 text-muted-foreground">
-                    {image.contentType ?? "Unknown"} • {image.bytes ? formatBytes(image.bytes) : "Size unavailable"} •
+                    {image.contentType ?? "Unknown"} | {image.bytes ? formatBytes(image.bytes) : "Size unavailable"} |{" "}
                     Est. savings {formatPercent(image.estimatedSavingsPercent)}
                   </p>
                   <ul className="mt-3 space-y-1 text-muted-foreground">

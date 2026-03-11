@@ -82,12 +82,15 @@ export async function getDashboardData(userId: string) {
   const originalBytes = totals._sum.originalBytes ?? 0;
   const compressedBytes = totals._sum.compressedBytes ?? 0;
   const bytesSaved = Math.max(0, originalBytes - compressedBytes);
+  const apiUsage = usageEvents.reduce((total, entry) => total + entry.apiCalls, 0);
 
   return {
     plan: subscription?.plan ?? "FREE",
     stats: {
       imagesCount,
+      storageUsed: compressedBytes,
       bytesSaved,
+      apiUsage,
       reductionRate: originalBytes > 0 ? (bytesSaved / originalBytes) * 100 : 0,
       apiKeys
     },

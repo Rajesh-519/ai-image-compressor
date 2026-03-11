@@ -10,14 +10,10 @@ export function FeatureGrid() {
   return (
     <section id="features" className="space-y-8">
       <div className="space-y-3 text-center">
-        <Badge>Advanced Features</Badge>
-        <h2 className="font-display text-4xl font-semibold text-white">
-          Compression workflows built for 2026 and beyond
+        <Badge>Features</Badge>
+        <h2 className="font-display text-3xl font-semibold text-white sm:text-4xl">
+          Built for fast image work
         </h2>
-        <p className="mx-auto max-w-3xl text-balance text-muted-foreground">
-          Modern codec support, content-aware optimization, responsive bundle generation, SEO
-          metadata, and website audits in one platform.
-        </p>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">

@@ -10,10 +10,9 @@ export default function CompressorPage() {
       <main className="mx-auto max-w-7xl space-y-10 px-6 py-16 lg:px-8">
         <div className="space-y-4">
           <Badge>Compressor</Badge>
-          <h1 className="font-display text-5xl font-semibold text-white">Compression studio</h1>
-          <p className="max-w-3xl text-lg text-muted-foreground">
-            Run one-off optimizations, format conversions, and responsive image generation against
-            the same API used by your automation pipeline.
+          <h1 className="font-display text-5xl font-semibold text-white">Optimize images now</h1>
+          <p className="max-w-3xl text-base text-muted-foreground">
+            Compress. Convert. Resize. Export.
           </p>
         </div>
         <CompressorWorkbench />

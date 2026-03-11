@@ -142,6 +142,14 @@ const EXPORT_OPTIONS: ExportOption[] = [
 
 const EDGE_READY_FORMATS = new Set<SupportedFormat>(["avif", "webp", "jpeg", "png"]);
 
+const SOCIAL_PRESETS = [
+  { label: "Instagram", width: 1080, height: 1350 },
+  { label: "YouTube", width: 1280, height: 720 },
+  { label: "Twitter", width: 1600, height: 900 },
+  { label: "LinkedIn", width: 1200, height: 627 },
+  { label: "WhatsApp", width: 1080, height: 1080 }
+] as const;
+
 function isEdgeReadyFormat(format: SupportedFormat) {
   return EDGE_READY_FORMATS.has(format);
 }
@@ -226,22 +234,28 @@ function getFormatWarnings({
 }
 
 export function CompressorWorkbench({
-  title = "Compression tuned for product screenshots, editorial images, and ecommerce catalogs",
-  description = "Choose between server-side AI preservation and browser-side WebAssembly compression. Faces and text blocks are detected before encoding so the quality floor stays where it matters."
+  title = "Upload images. Optimize them. Download fast.",
+  description = "Compress images, switch formats, resize for social, and export clean files."
 }: CompressorWorkbenchProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [queuedFiles, setQueuedFiles] = useState<File[]>([]);
+  const [queuedPreviews, setQueuedPreviews] = useState<Array<{ name: string; size: number; url: string }>>([]);
   const [sourceUrl, setSourceUrl] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [outputFormat, setOutputFormat] = useState("auto");
   const [executionMode, setExecutionMode] = useState<"server" | "edge">("server");
   const [mode, setMode] = useState<"max" | "balanced" | "quality" | "custom">("balanced");
   const [quality, setQuality] = useState(78);
+  const [maxWidth, setMaxWidth] = useState("");
+  const [maxHeight, setMaxHeight] = useState("");
   const [targetSizeKb, setTargetSizeKb] = useState("");
+  const [comparePosition, setComparePosition] = useState(50);
   const [contentAware, setContentAware] = useState(true);
   const [generateResponsive, setGenerateResponsive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreparingBundle, setIsPreparingBundle] = useState(false);
   const [bundleStatus, setBundleStatus] = useState<string | null>(null);
+  const [batchProgress, setBatchProgress] = useState<number | null>(null);
   const [result, setResult] = useState<CompressionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "analyzing" | "ready" | "error">("idle");
@@ -259,6 +273,25 @@ export function CompressorWorkbench({
 
     return () => URL.revokeObjectURL(nextUrl);
   }, [selectedFile]);
+
+  useEffect(() => {
+    if (queuedFiles.length === 0) {
+      setQueuedPreviews([]);
+      return;
+    }
+
+    const previews = queuedFiles.slice(0, 8).map((file) => ({
+      name: file.name,
+      size: file.size,
+      url: URL.createObjectURL(file)
+    }));
+
+    setQueuedPreviews(previews);
+
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [queuedFiles]);
 
   useEffect(() => {
     let cancelled = false;
@@ -420,43 +453,59 @@ export function CompressorWorkbench({
               )} for the strongest size-to-quality tradeoff.`
       : activeExportCard.bestFor;
 
-  function handleFile(file: File | null) {
-    if (!file) {
+  function handleFiles(files: File[] | FileList | null) {
+    const nextFiles = files ? Array.from(files).filter(Boolean) : [];
+
+    if (nextFiles.length === 0) {
       return;
     }
 
     startTransition(() => {
-      setSelectedFile(file);
+      setQueuedFiles(nextFiles);
+      setSelectedFile(nextFiles[0] ?? null);
+      setSourceUrl("");
       setResult(null);
       setError(null);
       setVisionError(null);
+      setBundleStatus(null);
+      setBatchProgress(null);
     });
+  }
+
+  function applyPreset(width: number, height: number) {
+    setMaxWidth(String(width));
+    setMaxHeight(String(height));
   }
 
   async function requestCompression({
     format,
-    forceExecutionMode
+    forceExecutionMode,
+    fileOverride
   }: {
     format: ExportOptionValue | SupportedFormat;
     forceExecutionMode?: "server" | "edge";
+    fileOverride?: File | null;
   }) {
     const selectedFormat = format === "auto" ? recommendedFormat : (format as SupportedFormat);
     const runtime = forceExecutionMode ?? executionMode;
+    const activeFile = fileOverride ?? selectedFile;
     const requestQuality =
       targetSizeBytes && Number.isFinite(targetSizeBytes)
         ? suggestQualityForTarget({
-            originalSize,
+            originalSize: activeFile?.size ?? originalSize,
             targetSize: targetSizeBytes,
             format: selectedFormat,
             mode
           })
         : quality;
 
-    if (runtime === "edge" && selectedFile && !sourceUrl.trim() && isEdgeReadyFormat(selectedFormat)) {
+    if (runtime === "edge" && activeFile && !sourceUrl.trim() && isEdgeReadyFormat(selectedFormat)) {
       return compressOnEdge({
-        file: selectedFile,
+        file: activeFile,
         outputFormat: selectedFormat,
         quality: requestQuality,
+        maxWidth: maxWidth ? Number(maxWidth) : undefined,
+        maxHeight: maxHeight ? Number(maxHeight) : undefined,
         generateResponsive,
         detectionHints
       });
@@ -464,8 +513,8 @@ export function CompressorWorkbench({
 
     const formData = new FormData();
 
-    if (selectedFile) {
-      formData.append("file", selectedFile);
+    if (activeFile) {
+      formData.append("file", activeFile);
     }
 
     if (sourceUrl.trim()) {
@@ -480,6 +529,12 @@ export function CompressorWorkbench({
     formData.append("executionMode", runtime);
     formData.append("mode", mode);
     formData.append("quality", String(requestQuality));
+    if (maxWidth) {
+      formData.append("maxWidth", maxWidth);
+    }
+    if (maxHeight) {
+      formData.append("maxHeight", maxHeight);
+    }
     formData.append("contentAware", String(contentAware));
     formData.append("generateResponsive", String(generateResponsive));
     formData.append("responseType", "json");
@@ -505,8 +560,40 @@ export function CompressorWorkbench({
 
     setIsSubmitting(true);
     setError(null);
+    setBatchProgress(null);
+    setBundleStatus(null);
 
     try {
+      if (queuedFiles.length > 1) {
+        const { default: JSZip } = await import("jszip");
+        const archive = new JSZip();
+
+        for (const [index, file] of queuedFiles.entries()) {
+          const payload = await requestCompression({
+            format: outputFormat,
+            fileOverride: file
+          });
+
+          archive.file(payload.fileName, Uint8Array.from(atob(payload.bufferBase64), (char) => char.charCodeAt(0)));
+          setBatchProgress(Math.round(((index + 1) / queuedFiles.length) * 100));
+          setBundleStatus(`Compressed ${index + 1} of ${queuedFiles.length} images...`);
+
+          if (index === queuedFiles.length - 1) {
+            startTransition(() => setResult(payload));
+          }
+        }
+
+        setBundleStatus("Building batch ZIP...");
+        const zipBlob = await archive.generateAsync({ type: "blob" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(zipBlob);
+        link.download = "ai-image-optimizer-batch.zip";
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 1_000);
+        setBundleStatus("Batch ZIP ready.");
+        return;
+      }
+
       const payload = await requestCompression({
         format: outputFormat
       });
@@ -633,13 +720,13 @@ export function CompressorWorkbench({
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
                 event.preventDefault();
-                handleFile(event.dataTransfer.files.item(0));
+                handleFiles(event.dataTransfer.files);
               }}
               onPaste={(event) => {
                 const item = Array.from(event.clipboardData.items).find((entry) =>
                   entry.type.startsWith("image/")
                 );
-                handleFile(item?.getAsFile() ?? null);
+                handleFiles(item?.getAsFile() ? [item.getAsFile() as File] : null);
               }}
             >
               <div className="flex items-start gap-4">
@@ -647,26 +734,63 @@ export function CompressorWorkbench({
                   <UploadCloud className="h-5 w-5 text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <p className="font-medium text-white">Drop an asset, paste from clipboard, or fetch from URL</p>
+                  <p className="font-medium text-white">Drop images, paste from clipboard, or fetch from URL</p>
                   <p className="text-sm text-muted-foreground">
-                    Use server AI for the most compatible pipeline or edge mode for low-latency in-browser encoding.
+                    Use server AI for full coverage or edge mode for fast browser-side encoding.
                   </p>
                 </div>
               </div>
 
               <input
                 type="file"
+                multiple
                 accept="image/*,.avif,.webp,.jxl,.heic"
-                onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
+                onChange={(event) => handleFiles(event.target.files)}
                 className="block w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-primary-foreground"
               />
+
+              {queuedPreviews.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Upload preview grid</span>
+                    <span>{queuedFiles.length} image(s) queued</span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {queuedPreviews.map((preview) => (
+                      <div
+                        key={preview.name}
+                        className="overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.03]"
+                      >
+                        <img
+                          src={preview.url}
+                          alt={preview.name}
+                          className="aspect-[4/3] w-full object-cover"
+                        />
+                        <div className="space-y-1 px-3 py-3 text-xs">
+                          <p className="truncate text-white">{preview.name}</p>
+                          <p className="text-muted-foreground">{formatBytes(preview.size)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="flex items-center gap-3">
                 <Link2 className="h-4 w-4 text-primary" />
                 <Input
                   placeholder="Remote URL: https://example.com/hero-image.jpg"
                   value={sourceUrl}
-                  onChange={(event) => setSourceUrl(event.target.value)}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setSourceUrl(nextValue);
+
+                    if (nextValue.trim()) {
+                      setQueuedFiles([]);
+                      setSelectedFile(null);
+                      setResult(null);
+                    }
+                  }}
                 />
               </div>
             </motion.div>
@@ -837,6 +961,48 @@ export function CompressorWorkbench({
               </div>
             </div>
 
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-white">Social presets</p>
+                <div className="flex flex-wrap gap-2">
+                  {SOCIAL_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => applyPreset(preset.width, preset.height)}
+                      className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-muted-foreground transition hover:border-white/20 hover:text-white"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tap once to load platform-friendly image sizes.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-2 text-sm text-muted-foreground">
+                  Width
+                  <Input
+                    inputMode="numeric"
+                    placeholder="Optional"
+                    value={maxWidth}
+                    onChange={(event) => setMaxWidth(event.target.value.replace(/[^\d]/g, ""))}
+                  />
+                </label>
+                <label className="space-y-2 text-sm text-muted-foreground">
+                  Height
+                  <Input
+                    inputMode="numeric"
+                    placeholder="Optional"
+                    value={maxHeight}
+                    onChange={(event) => setMaxHeight(event.target.value.replace(/[^\d]/g, ""))}
+                  />
+                </label>
+              </div>
+            </div>
+
             <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -905,7 +1071,7 @@ export function CompressorWorkbench({
               <Button
                 variant="outline"
                 onClick={handleDownloadAll}
-                disabled={isPreparingBundle || isSubmitting}
+                disabled={queuedFiles.length > 1 || isPreparingBundle || isSubmitting}
                 leftIcon={isPreparingBundle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
               >
                 Download all formats
@@ -918,6 +1084,7 @@ export function CompressorWorkbench({
             </div>
 
             {bundleStatus ? <p className="text-sm text-muted-foreground">{bundleStatus}</p> : null}
+            {batchProgress !== null ? <Progress value={batchProgress} /> : null}
           </div>
 
           <div className="dotted-noise space-y-5 p-7 lg:p-8">
@@ -996,39 +1163,62 @@ export function CompressorWorkbench({
             <Badge>{deferredResult ? deferredResult.executionMode.toUpperCase() : "READY"}</Badge>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Original asset</p>
-              <div className="grid-overlay flex aspect-square items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-black/30">
-                {previewUrl || sourceUrl ? (
+          <div className="space-y-3">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Before / after slider</p>
+            <div className="grid-overlay relative overflow-hidden rounded-[28px] border border-white/10 bg-black/30">
+              {previewUrl || sourceUrl ? (
+                <div className="relative aspect-[16/10]">
                   <img
                     src={previewUrl ?? sourceUrl}
                     alt="Original preview"
                     className="h-full w-full object-cover"
                   />
-                ) : (
-                  <p className="max-w-[14rem] text-center text-sm text-muted-foreground">
-                    Upload or paste an image to populate the source preview.
-                  </p>
-                )}
-              </div>
+                  {resultPreviewUrl ? (
+                    <>
+                      <div
+                        className="absolute inset-y-0 left-0 overflow-hidden"
+                        style={{ width: `${comparePosition}%` }}
+                      >
+                        <img
+                          src={resultPreviewUrl}
+                          alt="Compressed preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div
+                        className="absolute inset-y-0 w-px bg-white/80"
+                        style={{ left: `${comparePosition}%` }}
+                      />
+                    </>
+                  ) : null}
+                  <div className="absolute left-4 top-4 rounded-full border border-white/10 bg-black/60 px-3 py-1 text-xs text-white">
+                    Original
+                  </div>
+                  <div className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/60 px-3 py-1 text-xs text-white">
+                    Optimized
+                  </div>
+                </div>
+              ) : (
+                <div className="flex aspect-[16/10] items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                  Upload or paste an image to populate the preview.
+                </div>
+              )}
             </div>
 
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Compressed asset</p>
-              <div className="grid-overlay flex aspect-square items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-black/30">
-                {resultPreviewUrl ? (
-                  <img
-                    src={resultPreviewUrl}
-                    alt="Compressed preview"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <p className="max-w-[14rem] text-center text-sm text-muted-foreground">
-                    Run the pipeline to preview the encoded output.
-                  </p>
-                )}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                <span>Compare</span>
+                <span>{comparePosition}%</span>
               </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={comparePosition}
+                onChange={(event) => setComparePosition(Number(event.target.value))}
+                className="w-full accent-[hsl(var(--primary))]"
+                disabled={!resultPreviewUrl}
+              />
             </div>
           </div>
 

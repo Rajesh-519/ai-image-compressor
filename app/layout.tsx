@@ -1,32 +1,38 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import "@/app/globals.css";
 
 import { Providers } from "@/app/providers";
 
-const display = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display"
-});
-
-const sans = Manrope({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans"
 });
 
 export const metadata: Metadata = {
-  title: "CompressAI Pro",
+  title: "AI Image Optimizer Pro",
   description:
-    "AI-powered image compression, conversion, SEO metadata, bulk processing, and website image audits for modern teams.",
-  applicationName: "CompressAI Pro",
+    "AI-powered image optimization for JPG, PNG, WebP, AVIF, HEIC, batch export, and developer APIs.",
+  applicationName: "AI Image Optimizer Pro",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "AI Image Optimizer Pro"
+  },
+  icons: {
+    icon: "/pwa-icon.svg",
+    apple: "/pwa-icon.svg"
+  },
   keywords: [
-    "image compression",
-    "AVIF",
-    "WebP",
-    "JPEG XL",
-    "image SEO",
-    "website image audit"
+    "ai image optimizer",
+    "image compressor",
+    "compress jpg",
+    "compress png",
+    "compress webp",
+    "compress avif",
+    "batch image compressor"
   ]
 };
 
@@ -37,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${display.variable} ${sans.variable}`}>
+      <body className={`${inter.variable} font-sans`}>
         <Providers>{children}</Providers>
       </body>
     </html>

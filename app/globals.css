@@ -3,21 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: 222 28% 6%;
+  --background: 229 41% 7%;
   --foreground: 210 20% 96%;
-  --card: 223 22% 9%;
+  --card: 228 29% 10%;
   --card-foreground: 210 20% 96%;
-  --primary: 213 88% 61%;
-  --primary-foreground: 220 30% 10%;
-  --secondary: 222 18% 14%;
+  --primary: 239 84% 67%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 258 90% 66%;
   --secondary-foreground: 210 20% 96%;
-  --accent: 198 92% 59%;
-  --accent-foreground: 224 71% 6%;
-  --muted: 222 16% 13%;
+  --accent: 190 95% 43%;
+  --accent-foreground: 210 40% 98%;
+  --muted: 228 22% 15%;
   --muted-foreground: 216 15% 72%;
-  --border: 222 14% 18%;
-  --input: 222 14% 18%;
-  --ring: 213 88% 61%;
+  --border: 229 18% 19%;
+  --input: 229 18% 19%;
+  --ring: 239 84% 67%;
   --success: 142 71% 45%;
   --success-foreground: 210 40% 98%;
   --warning: 33 94% 58%;
@@ -52,10 +52,12 @@ html {
 
 body {
   @apply bg-background font-sans text-foreground antialiased;
+  --font-display: var(--font-sans);
   background-image:
-    radial-gradient(circle at top center, rgba(59, 130, 246, 0.16), transparent 0, transparent 32rem),
-    radial-gradient(circle at 12% 18%, rgba(148, 163, 184, 0.08), transparent 0, transparent 20rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 20%);
+    radial-gradient(circle at top center, rgba(99, 102, 241, 0.22), transparent 0, transparent 34rem),
+    radial-gradient(circle at 14% 18%, rgba(139, 92, 246, 0.14), transparent 0, transparent 24rem),
+    radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.12), transparent 0, transparent 18rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 18%);
   min-height: 100vh;
 }
 
@@ -87,8 +89,9 @@ body {
 
 .hero-shell {
   background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.2), transparent 26%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(8, 11, 18, 0.98));
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.22), transparent 26%),
+    radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(12, 16, 32, 0.94), rgba(7, 10, 20, 0.98));
 }
 
 .dotted-noise {

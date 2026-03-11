@@ -10,10 +10,9 @@ export default function AnalyticsPage() {
       <main className="mx-auto max-w-7xl space-y-10 px-6 py-16 lg:px-8">
         <div className="space-y-4">
           <Badge>Website Image Audit</Badge>
-          <h1 className="font-display text-5xl font-semibold text-white">Scan any website for image waste</h1>
-          <p className="max-w-3xl text-lg text-muted-foreground">
-            Inspect up to 25 images from a live page, identify oversized or legacy assets, and get
-            immediate AVIF/WebP conversion and responsive-sizing suggestions.
+          <h1 className="font-display text-5xl font-semibold text-white">Scan any site for heavy images</h1>
+          <p className="max-w-3xl text-base text-muted-foreground">
+            Find large files. Get quick format and size fixes.
           </p>
         </div>
         <AuditForm />

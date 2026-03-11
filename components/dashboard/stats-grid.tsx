@@ -1,14 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { formatBytes, formatPercent } from "@/utils/format";
+import { formatBytes } from "@/utils/format";
 
 export function StatsGrid({
   stats
 }: {
   stats: {
     imagesCount: number;
+    storageUsed: number;
     bytesSaved: number;
-    reductionRate: number;
-    apiKeys: number;
+    apiUsage: number;
   };
 }) {
   return (
@@ -21,22 +21,20 @@ export function StatsGrid({
       </Card>
       <Card>
         <CardContent className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.18em] text-primary">Bytes saved</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-primary">Storage used</p>
+          <p className="font-display text-3xl font-semibold text-white">{formatBytes(stats.storageUsed)}</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.18em] text-primary">Total size saved</p>
           <p className="font-display text-3xl font-semibold text-white">{formatBytes(stats.bytesSaved)}</p>
         </CardContent>
       </Card>
       <Card>
         <CardContent className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.18em] text-primary">Average reduction</p>
-          <p className="font-display text-3xl font-semibold text-white">
-            {formatPercent(stats.reductionRate)}
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.18em] text-primary">Active API keys</p>
-          <p className="font-display text-3xl font-semibold text-white">{stats.apiKeys}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-primary">API usage</p>
+          <p className="font-display text-3xl font-semibold text-white">{stats.apiUsage}</p>
         </CardContent>
       </Card>
     </div>
